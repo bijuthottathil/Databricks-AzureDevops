@@ -1,0 +1,48 @@
+# azure-pipelines.yml
+# Deploy Databricks Asset Bundle to DEV and run the job
+
+trigger: none   # run manually; enable CI triggers if you prefer
+
+pool:
+  vmImage: ubuntu-latest
+
+# Store these in a Variable Group named "databricks-dev"
+#   DATABRICKS_HOST  = https://<dev-workspace-host>
+#   DATABRICKS_TOKEN = <PAT with workspace perms>
+variables:
+- group: databricks-dev
+
+steps:
+- checkout: self
+  clean: true
+
+# Install Databricks CLI (v0.228+)
+- script: |
+    curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+    echo "##vso[task.prependpath]$HOME/.databricks/bin"
+    databricks --version
+  displayName: Install Databricks CLI
+
+# Validate bundle for dev
+- script: |
+    databricks bundle validate -t dev
+  env:
+    DATABRICKS_HOST: $(DATABRICKS_HOST)
+    DATABRICKS_TOKEN: $(DATABRICKS_TOKEN)
+  displayName: Validate bundle (dev)
+
+# Deploy bundle to dev
+- script: |
+    databricks bundle deploy -t dev
+  env:
+    DATABRICKS_HOST: $(DATABRICKS_HOST)
+    DATABRICKS_TOKEN: $(DATABRICKS_TOKEN)
+  displayName: Deploy bundle (dev)
+
+# Run the job defined in databricks.yml
+- script: |
+    databricks bundle run create_uc_objects_job -t dev
+  env:
+    DATABRICKS_HOST: $(DATABRICKS_HOST)
+    DATABRICKS_TOKEN: $(DATABRICKS_TOKEN)
+  displayName: Run job (dev)
