@@ -1,0 +1,60 @@
+bundle:
+  name: uc-demo-bundle
+
+variables:
+  catalog_name:
+    type: string
+  schema_name:
+    type: string
+  table_name:
+    type: string
+    default: demo_customers
+
+resources:
+  schemas:
+    data_schema:
+      name: ${var.schema_name}
+      catalog_name: ${var.catalog_name}
+
+  jobs:
+    create_uc_objects_job:
+      name: uc-demo-create-objects
+      tasks:
+        - task_key: run_notebook
+          notebook_task:
+            notebook_path: ./notebooks/create_table.py
+            source: WORKSPACE
+            base_parameters:
+              CATALOG: ${var.catalog_name}
+              SCHEMA: ${var.schema_name}
+              TABLE: ${var.table_name}
+          new_cluster:
+            spark_version: 14.3.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 0
+      tags:
+        env: ${bundle.target}
+        owner: dataplatform
+
+targets:
+  dev:
+    workspace:
+      host: https://<dev-workspace-host>
+      root_path: /Shared/bundles/${bundle.target}/${bundle.name}
+    run_as:
+      user_name: <your-user-email>
+    variables:
+      catalog_name: dev_catalog
+      schema_name: bronze
+      table_name: demo_customers
+
+  qq:
+    workspace:
+      host: https://<qq-workspace-host>
+      root_path: /Shared/bundles/${bundle.target}/${bundle.name}
+    run_as:
+      user_name: <your-user-email>
+    variables:
+      catalog_name: qq_catalog
+      schema_name: bronze
+      table_name: demo_customers
