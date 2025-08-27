@@ -45,13 +45,13 @@ targets:
       schema_name: bronze
       table_name: demo_customers
 
-  qq:
+  qa:
     workspace:
-      host: https://<qq-workspace-host>
+      host: https://adb-506773690582597.17.azuredatabricks.net/
       root_path: /Shared/bundles/${bundle.target}/${bundle.name}
     run_as:
-      user_name: <your-user-email>
+      user_name: thottathil@bijusofthotmailcom.onmicrosoft.com
     variables:
-      catalog_name: qq_catalog
+      catalog_name: qa_catalog
       schema_name: bronze
       table_name: demo_customers
