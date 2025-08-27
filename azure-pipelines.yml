@@ -1,48 +1,76 @@
-# azure-pipelines.yml
-# Deploy Databricks Asset Bundle to DEV and run the job
-
-trigger: none   # run manually; enable CI triggers if you prefer
-
+trigger: none
 pool:
   vmImage: ubuntu-latest
 
-# Store these in a Variable Group named "databricks-dev"
-#   DATABRICKS_HOST  = https://<dev-workspace-host>
-#   DATABRICKS_TOKEN = <PAT with workspace perms>
 variables:
-- group: databricks-dev
+- group: databricks-devqa
 
-steps:
-- checkout: self
-  clean: true
 
-# Install Databricks CLI (v0.228+)
-- script: |
-    curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
-    echo "##vso[task.prependpath]$HOME/.databricks/bin"
-    databricks --version
-  displayName: Install Databricks CLI
+stages:
+# -------------------
+# Stage 1: DEV
+# -------------------
+- stage: Deploy_Dev
+  displayName: "Deploy to Dev"
+  jobs:
+  - job: dev
+    displayName: "Deploy bundle to Dev"
+    steps:
+    - checkout: self
+      clean: true
 
-# Validate bundle for dev
-- script: |
-    databricks bundle validate -t dev
-  env:
-    DATABRICKS_HOST: $(DATABRICKS_HOST)
-    DATABRICKS_TOKEN: $(DATABRICKS_TOKEN)
-  displayName: Validate bundle (dev)
+    - script: |
+        curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+        echo "##vso[task.prependpath]$HOME/.databricks/bin"
+        databricks --version
+      displayName: "Install Databricks CLI"
 
-# Deploy bundle to dev
-- script: |
-    databricks bundle deploy -t dev
-  env:
-    DATABRICKS_HOST: $(DATABRICKS_HOST)
-    DATABRICKS_TOKEN: $(DATABRICKS_TOKEN)
-  displayName: Deploy bundle (dev)
+    - script: databricks bundle validate -t dev
+      env: { DATABRICKS_HOST: $(DATABRICKS_HOST_DEV), DATABRICKS_TOKEN: $(DATABRICKS_TOKEN_DEV) }
+      displayName: "Validate bundle (dev)"
 
-# Run the job defined in databricks.yml
-- script: |
-    databricks bundle run create_uc_objects_job -t dev
-  env:
-    DATABRICKS_HOST: $(DATABRICKS_HOST)
-    DATABRICKS_TOKEN: $(DATABRICKS_TOKEN)
-  displayName: Run job (dev)
+    - script: databricks bundle deploy -t dev
+      env: { DATABRICKS_HOST: $(DATABRICKS_HOST_DEV), DATABRICKS_TOKEN: $(DATABRICKS_TOKEN_DEV) }
+      displayName: "Deploy bundle (dev)"
+
+    - script: databricks bundle run create_uc_objects_job -t dev
+      env: { DATABRICKS_HOST: $(DATABRICKS_HOST_DEV), DATABRICKS_TOKEN: $(DATABRICKS_TOKEN_DEV) }
+      displayName: "Run job (dev)"
+
+# -------------------
+# Stage 2: QA (with approval)
+# -------------------
+- stage: Deploy_QA
+  displayName: "Deploy to QA"
+  dependsOn: Deploy_Dev
+  condition: succeeded()
+
+  jobs:
+  # Use a deployment job so we can bind to an Environment with approvals
+  - deployment: qa_deploy
+    displayName: "Deploy bundle to QA"
+    environment: "qa"    # <-- Create this Environment and add an Approval check in the UI
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+            clean: true
+
+          - script: |
+              curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+              echo "##vso[task.prependpath]$HOME/.databricks/bin"
+              databricks --version
+            displayName: "Install Databricks CLI"
+
+          - script: databricks bundle validate -t qa
+            env: { DATABRICKS_HOST: $(DATABRICKS_HOST_QA), DATABRICKS_TOKEN: $(DATABRICKS_TOKEN_QA) }
+            displayName: "Validate bundle (QA)"
+
+          - script: databricks bundle deploy -t qa
+            env: { DATABRICKS_HOST: $(DATABRICKS_HOST_QA), DATABRICKS_TOKEN: $(DATABRICKS_TOKEN_QA) }
+            displayName: "Deploy bundle (QA)"
+
+          - script: databricks bundle run create_uc_objects_job -t qa
+            env: { DATABRICKS_HOST: $(DATABRICKS_HOST_QA), DATABRICKS_TOKEN: $(DATABRICKS_TOKEN_QA) }
+            displayName: "Run job (QA)"
