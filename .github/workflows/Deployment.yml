@@ -1,0 +1,75 @@
+name: Databricks Bundle Deploy
+
+on:
+  workflow_dispatch:   # manual trigger (same as "trigger: none" in ADO)
+
+jobs:
+  # -------------------
+  # Stage 1: DEV
+  # -------------------
+  deploy_dev:
+    name: Deploy to Dev
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Databricks CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+          echo "$HOME/.databricks/bin" >> $GITHUB_PATH
+          databricks --version
+
+      - name: Validate bundle (dev)
+        run: databricks bundle validate -t dev
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_DEV }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_DEV }}
+
+      - name: Deploy bundle (dev)
+        run: databricks bundle deploy -t dev
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_DEV }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_DEV }}
+
+      - name: Run job (dev)
+        run: databricks bundle run create_uc_objects_job -t dev
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_DEV }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_DEV }}
+
+  # -------------------
+  # Stage 2: QA (with approval)
+  # -------------------
+  deploy_qa:
+    name: Deploy to QA
+    runs-on: ubuntu-latest
+    needs: deploy_dev     # depends on dev job success
+    environment: qa       # <-- Define an environment "qa" in GitHub and add required reviewers
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Databricks CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+          echo "$HOME/.databricks/bin" >> $GITHUB_PATH
+          databricks --version
+
+      - name: Validate bundle (qa)
+        run: databricks bundle validate -t qa
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_QA }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_QA }}
+
+      - name: Deploy bundle (qa)
+        run: databricks bundle deploy -t qa
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_QA }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_QA }}
+
+      - name: Run job (qa)
+        run: databricks bundle run create_uc_objects_job -t qa
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_QA }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_QA }}
