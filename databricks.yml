@@ -56,3 +56,4 @@ targets:
       catalog_name: qa_catalog
       schema_name: bronze
       table_name: demo_customers
+      source_linked_deployment: false
