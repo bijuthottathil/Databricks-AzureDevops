@@ -10,3 +10,9 @@ https://medium.com/@bijumathewt/databricks-assetbundle-deployment-to-dev-and-qa-
 
 
 <img width="2128" height="1326" alt="image" src="https://github.com/user-attachments/assets/d42b5ce4-377f-4743-b757-330eaaa404b9" />
+
+
+
+yml file used for Github Action can be found below
+
+<img width="2486" height="1310" alt="image" src="https://github.com/user-attachments/assets/db88b7fa-2938-4f7d-be4e-1a2fa7d688c9" />
