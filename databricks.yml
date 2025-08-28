@@ -34,7 +34,7 @@ resources:
 
 targets:
   dev:
-    source_linked_deployment: false   # ✅ moved here
+    source_linked_deployment: false   
     workspace:
       host: https://adb-3283024692776789.9.azuredatabricks.net/
       root_path: /Shared/bundles/${bundle.target}/${bundle.name}
@@ -46,7 +46,7 @@ targets:
       table_name: demo_customers
 
   qa:
-    source_linked_deployment: false   # ✅ moved here
+    source_linked_deployment: false  
     workspace:
       host: https://adb-506773690582597.17.azuredatabricks.net/
       root_path: /Shared/bundles/${bundle.target}/${bundle.name}
