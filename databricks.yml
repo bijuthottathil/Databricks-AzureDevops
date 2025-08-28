@@ -28,13 +28,13 @@ resources:
               CATALOG: ${var.catalog_name}
               SCHEMA: ${var.schema_name}
               TABLE: ${var.table_name}
-
       tags:
         env: ${bundle.target}
         owner: dataplatform
 
 targets:
   dev:
+    source_linked_deployment: false   # ✅ moved here
     workspace:
       host: https://adb-3283024692776789.9.azuredatabricks.net/
       root_path: /Shared/bundles/${bundle.target}/${bundle.name}
@@ -44,9 +44,9 @@ targets:
       catalog_name: dev_catalog
       schema_name: bronze
       table_name: demo_customers
-      source_linked_deployment: false
 
   qa:
+    source_linked_deployment: false   # ✅ moved here
     workspace:
       host: https://adb-506773690582597.17.azuredatabricks.net/
       root_path: /Shared/bundles/${bundle.target}/${bundle.name}
@@ -56,4 +56,3 @@ targets:
       catalog_name: qa_catalog
       schema_name: bronze
       table_name: demo_customers
-      source_linked_deployment: false
